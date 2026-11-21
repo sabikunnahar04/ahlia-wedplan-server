@@ -84,7 +84,7 @@ router.post('/', verifyToken, async (req, res, next) => {
   }
 });
 
-// Get all bookings
+
 router.get('/', async (req, res, next) => {
   try {
     const bookings = await getDb().collection('bookings').find({}).toArray();
@@ -105,5 +105,78 @@ router.get('/my-bookings', verifyToken, async (req, res, next) => {
     next(err);
   }
 });
+
+
+router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'vendor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only vendors can access booking requests',
+      });
+    }
+
+    const bookings = await getDb()
+      .collection('bookings')
+      .find({ vendorId: req.user.sub })
+      .toArray();
+
+    res.json({
+      success: true,
+      data: bookings,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+ // Update Booking Status
+router.put('/:id/status', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'vendor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only vendors can update booking status',
+      });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking status',
+      });
+    }
+
+    const result = await getDb().collection('bookings').updateOne(
+      {
+        _id: new ObjectId(id),
+        vendorId: req.user.sub,
+        status: 'pending',
+      },
+      {
+        $set: { status },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending booking not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking status updated successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 export default router;
