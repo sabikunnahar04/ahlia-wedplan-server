@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { getDb } from '../../config/db.js';
 import { sendSuccess } from '../../utils/sendSuccess.js';
 import { verifyToken, verifyVendor } from '../../middleware/verifyToken.js';
+import { ObjectId } from 'mongodb';
 
 const router = Router();
 
@@ -21,8 +22,6 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
 });
 
 
-
-
 router.get('/', async (req, res, next) => {
   try {
     const services = await getDb().collection('services').find({}).toArray();
@@ -33,6 +32,29 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+
+router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can update service status',
+      });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const result = await getDb().collection('services').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status: status } }
+    );
+
+    sendSuccess(res, result, 'Service status updated successfully');
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/admin', verifyToken, async (req, res, next) => {
   try {
