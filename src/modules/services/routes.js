@@ -20,9 +20,33 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   }
 });
 
+
+
+
 router.get('/', async (req, res, next) => {
   try {
     const services = await getDb().collection('services').find({}).toArray();
+
+    sendSuccess(res, services, 'Services fetched successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+router.get('/admin', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can access this route',
+      });
+    }
+
+    const services = await getDb()
+      .collection('services')
+      .find({})
+      .toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {
