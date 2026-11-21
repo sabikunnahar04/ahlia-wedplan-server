@@ -21,17 +21,47 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   }
 });
 
-
 router.get('/', async (req, res, next) => {
   try {
-    const services = await getDb().collection('services').find({}).toArray();
+    const services = await getDb()
+      .collection('services')
+      .aggregate([
+        {
+          $lookup: {
+            from: 'user',
+            let: { vendorId: '$vendorId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: [{ $toString: '$_id' }, '$$vendorId']
+                  }
+                }
+              },
+              {
+                $project: {
+                  name: 1,
+                  email: 1
+                }
+              }
+            ],
+            as: 'vendor'
+          }
+        },
+        {
+          $unwind: {
+            path: '$vendor',
+            preserveNullAndEmptyArrays: true
+          }
+        }
+      ])
+      .toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {
     next(err);
   }
 });
-
 
 router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
   try {
@@ -55,7 +85,6 @@ router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
     next(err);
   }
 });
-
 
 router.delete('/admin/:id', verifyToken, async (req, res, next) => {
   try {
@@ -100,7 +129,9 @@ router.get('/admin', verifyToken, async (req, res, next) => {
 
 router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
   try {
-    const services = await getDb().collection('services').find({ vendorId: req.user.sub }).toArray();
+    const services = await getDb().collection('services').find({
+      vendorId: req.user.sub
+    }).toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {
