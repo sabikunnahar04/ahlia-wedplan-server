@@ -1,5 +1,7 @@
 
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { ObjectId } from 'mongodb';
+import { getDb } from '../config/db.js';
 
 const JWKS = createRemoteJWKSet(
   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
@@ -26,6 +28,17 @@ export async function verifyToken(req, res, next) {
       return res.status(401).json({
         success: false,
         message: 'Invalid user information',
+      });
+    }
+
+    const user = await getDb().collection('user').findOne({
+      _id: new ObjectId(payload.sub),
+    });
+
+    if (user?.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been blocked',
       });
     }
 
