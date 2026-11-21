@@ -56,6 +56,28 @@ router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
   }
 });
 
+
+router.delete('/admin/:id', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can delete services',
+      });
+    }
+
+    const { id } = req.params;
+
+    const result = await getDb().collection('services').deleteOne({
+      _id: new ObjectId(id),
+    });
+
+    sendSuccess(res, result, 'Service deleted successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/admin', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'admin') {
