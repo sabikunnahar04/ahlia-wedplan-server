@@ -1,3 +1,4 @@
+
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const JWKS = createRemoteJWKSet(
@@ -21,6 +22,13 @@ export async function verifyToken(req, res, next) {
 
     req.user = payload;
 
+    if (!payload.sub || !payload.role) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid user information',
+      });
+    }
+
     next();
   } catch (err) {
     res.status(401).json({
@@ -28,4 +36,15 @@ export async function verifyToken(req, res, next) {
       message: 'Invalid or expired token',
     });
   }
+}
+
+export function verifyVendor(req, res, next) {
+  if (req.user.role !== 'vendor') {
+    return res.status(403).json({
+      success: false,
+      message: 'Only vendors can access this route',
+    });
+  }
+
+  next();
 }
