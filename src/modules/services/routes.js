@@ -7,18 +7,15 @@ import { ObjectId } from 'mongodb';
 
 const router = Router();
 
-
-
+// Add Service
 router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   try {
     const db = getDb();
 
-   
     const vendor = await db.collection('user').findOne({
       _id: new ObjectId(req.user.sub),
     });
 
-   
     const plan = vendor?.plan || 'free';
 
     const activeServices = await db.collection('services').countDocuments({
@@ -26,7 +23,6 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
       isActive: { $ne: false },
     });
 
-    
     if (plan === 'free' && activeServices >= 3) {
       return res.status(403).json({
         success: false,
@@ -48,24 +44,12 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   }
 });
 
-
-
-
+// Get All Approved Services
 router.get('/', async (req, res, next) => {
   try {
-    const services = await getDb().collection('services').find({}).toArray();
-
-    sendSuccess(res, services, 'Services fetched successfully');
-  } catch (err) {
-    next(err);
-  }
-});
-
-
-router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
-  try {
     const services = await getDb().collection('services').find({
-      vendorId: req.user.sub
+      status: 'approved',
+      isActive: { $ne: false },
     }).toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
@@ -74,19 +58,39 @@ router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => 
   }
 });
 
+// Get Vendor's Services
+router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
+  try {
+    const services = await getDb().collection('services').find({
+      vendorId: req.user.sub,
+    }).toArray();
 
+    sendSuccess(res, services, 'Services fetched successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Update Service
 router.put('/:id', verifyToken, verifyVendor, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, category, description, price, location } = req.body;
+    const { name, category, description, price, location, image } = req.body;
 
     const result = await getDb().collection('services').updateOne(
       {
         _id: new ObjectId(id),
-        vendorId: req.user.sub
+        vendorId: req.user.sub,
       },
       {
-        $set: { name, category, description, price, location }
+        $set: {
+          name,
+          category,
+          description,
+          price,
+          location,
+          image,
+        },
       }
     );
 
@@ -96,14 +100,14 @@ router.put('/:id', verifyToken, verifyVendor, async (req, res, next) => {
   }
 });
 
-
+// Vendor: Delete Service
 router.delete('/:id', verifyToken, verifyVendor, async (req, res, next) => {
   try {
     const { id } = req.params;
 
     const result = await getDb().collection('services').deleteOne({
       _id: new ObjectId(id),
-      vendorId: req.user.sub
+      vendorId: req.user.sub,
     });
 
     sendSuccess(res, result, 'Service deleted successfully');
@@ -112,7 +116,7 @@ router.delete('/:id', verifyToken, verifyVendor, async (req, res, next) => {
   }
 });
 
-
+// Update Service Availability
 router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -121,10 +125,10 @@ router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, ne
     const result = await getDb().collection('services').updateOne(
       {
         _id: new ObjectId(id),
-        vendorId: req.user.sub
+        vendorId: req.user.sub,
       },
       {
-        $set: { isActive }
+        $set: { isActive },
       }
     );
 
@@ -134,13 +138,13 @@ router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, ne
   }
 });
 
-
+// Admin: Update Service Status
 router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only admin can update service status'
+        message: 'Only admin can update service status',
       });
     }
 
@@ -161,12 +165,12 @@ router.delete('/admin/:id', verifyToken, async (req, res, next) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only admin can delete services'
+        message: 'Only admin can delete services',
       });
     }
 
     const result = await getDb().collection('services').deleteOne({
-      _id: new ObjectId(req.params.id)
+      _id: new ObjectId(req.params.id),
     });
 
     sendSuccess(res, result, 'Service deleted successfully');
@@ -175,13 +179,13 @@ router.delete('/admin/:id', verifyToken, async (req, res, next) => {
   }
 });
 
-
+// Admin: Get All Services
 router.get('/admin', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Only admin can access this route'
+        message: 'Only admin can access this route',
       });
     }
 

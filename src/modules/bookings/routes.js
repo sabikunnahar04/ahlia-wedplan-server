@@ -84,29 +84,55 @@ router.post('/', verifyToken, async (req, res, next) => {
   }
 });
 
-
+// Get All Bookings
 router.get('/', async (req, res, next) => {
   try {
     const bookings = await getDb().collection('bookings').find({}).toArray();
+
     res.json({ success: true, data: bookings });
   } catch (err) {
     next(err);
   }
 });
+
+// Customer: My Bookings
 router.get('/my-bookings', verifyToken, async (req, res, next) => {
   try {
-    const bookings = await getDb()
-      .collection('bookings')
+    const db = getDb();
+
+    const bookings = await db.collection('bookings')
       .find({ customerId: req.user.sub })
       .toArray();
 
-    res.json({ success: true, data: bookings });
+    const updatedBookings = await Promise.all(
+      bookings.map(async (booking) => {
+        const service = await db.collection('services').findOne({
+          _id: new ObjectId(booking.serviceId),
+        });
+
+        const vendor = await db.collection('user').findOne({
+          _id: new ObjectId(booking.vendorId),
+        });
+
+        return {
+          ...booking,
+          serviceImage: service?.image || '',
+          vendorName: vendor?.name || '',
+          vendorEmail: vendor?.email || '',
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: updatedBookings,
+    });
   } catch (err) {
     next(err);
   }
 });
 
-
+// Vendor: Booking Requests
 router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'vendor') {
@@ -130,8 +156,7 @@ router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
   }
 });
 
-
- 
+// Customer: Cancel Pending Booking
 router.put('/:id/cancel', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'customer') {
@@ -177,6 +202,7 @@ router.put('/:id/cancel', verifyToken, async (req, res, next) => {
   }
 });
 
+// Vendor: Accept or Reject Booking
 router.put('/:id/status', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'vendor') {
@@ -189,7 +215,7 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!['accepted', 'rejected'].includes(status)) {
+    if (!ObjectId.isValid(id) || !['accepted', 'rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid booking status',
@@ -222,6 +248,5 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
     next(err);
   }
 });
-
 
 export default router;
