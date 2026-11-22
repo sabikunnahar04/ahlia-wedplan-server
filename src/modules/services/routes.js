@@ -7,13 +7,40 @@ import { ObjectId } from 'mongodb';
 
 const router = Router();
 
+
+
 router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   try {
-    const { vendorId: _vendorId, ...data } = req.body;
-    data.vendorId = req.user.sub;
-    data.status = "pending";
+    const db = getDb();
 
-    const result = await getDb().collection('services').insertOne(data);
+   
+    const vendor = await db.collection('user').findOne({
+      _id: new ObjectId(req.user.sub),
+    });
+
+   
+    const plan = vendor?.plan || 'free';
+
+    const activeServices = await db.collection('services').countDocuments({
+      vendorId: req.user.sub,
+      isActive: { $ne: false },
+    });
+
+    
+    if (plan === 'free' && activeServices >= 3) {
+      return res.status(403).json({
+        success: false,
+        message: 'Free plan allows maximum 3 active services. Please upgrade to Premium.',
+      });
+    }
+
+    const { vendorId: _vendorId, ...data } = req.body;
+
+    data.vendorId = req.user.sub;
+    data.status = 'pending';
+    data.isActive = true;
+
+    const result = await db.collection('services').insertOne(data);
 
     sendSuccess(res, result, 'Service added successfully', 201);
   } catch (err) {
@@ -21,41 +48,12 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   }
 });
 
+
+
+
 router.get('/', async (req, res, next) => {
   try {
-    const services = await getDb()
-      .collection('services')
-      .aggregate([
-        {
-          $lookup: {
-            from: 'user',
-            let: { vendorId: '$vendorId' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: [{ $toString: '$_id' }, '$$vendorId']
-                  }
-                }
-              },
-              {
-                $project: {
-                  name: 1,
-                  email: 1
-                }
-              }
-            ],
-            as: 'vendor'
-          }
-        },
-        {
-          $unwind: {
-            path: '$vendor',
-            preserveNullAndEmptyArrays: true
-          }
-        }
-      ])
-      .toArray();
+    const services = await getDb().collection('services').find({}).toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {
@@ -63,42 +61,49 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
+
+router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admin can update service status',
-      });
-    }
+    const services = await getDb().collection('services').find({
+      vendorId: req.user.sub
+    }).toArray();
 
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const result = await getDb().collection('services').updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status: status } }
-    );
-
-    sendSuccess(res, result, 'Service status updated successfully');
+    sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {
     next(err);
   }
 });
 
-router.delete('/admin/:id', verifyToken, async (req, res, next) => {
-  try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admin can delete services',
-      });
-    }
 
+router.put('/:id', verifyToken, verifyVendor, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, category, description, price, location } = req.body;
+
+    const result = await getDb().collection('services').updateOne(
+      {
+        _id: new ObjectId(id),
+        vendorId: req.user.sub
+      },
+      {
+        $set: { name, category, description, price, location }
+      }
+    );
+
+    sendSuccess(res, result, 'Service updated successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+router.delete('/:id', verifyToken, verifyVendor, async (req, res, next) => {
+  try {
     const { id } = req.params;
 
     const result = await getDb().collection('services').deleteOne({
       _id: new ObjectId(id),
+      vendorId: req.user.sub
     });
 
     sendSuccess(res, result, 'Service deleted successfully');
@@ -107,31 +112,80 @@ router.delete('/admin/:id', verifyToken, async (req, res, next) => {
   }
 });
 
-router.get('/admin', verifyToken, async (req, res, next) => {
+
+router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admin can access this route',
-      });
-    }
+    const { id } = req.params;
+    const { isActive } = req.body;
 
-    const services = await getDb()
-      .collection('services')
-      .find({})
-      .toArray();
+    const result = await getDb().collection('services').updateOne(
+      {
+        _id: new ObjectId(id),
+        vendorId: req.user.sub
+      },
+      {
+        $set: { isActive }
+      }
+    );
 
-    sendSuccess(res, services, 'Services fetched successfully');
+    sendSuccess(res, result, 'Availability updated successfully');
   } catch (err) {
     next(err);
   }
 });
 
-router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
+
+router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
   try {
-    const services = await getDb().collection('services').find({
-      vendorId: req.user.sub
-    }).toArray();
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can update service status'
+      });
+    }
+
+    const result = await getDb().collection('services').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { status: req.body.status } }
+    );
+
+    sendSuccess(res, result, 'Service status updated successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Admin: Delete Service
+router.delete('/admin/:id', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can delete services'
+      });
+    }
+
+    const result = await getDb().collection('services').deleteOne({
+      _id: new ObjectId(req.params.id)
+    });
+
+    sendSuccess(res, result, 'Service deleted successfully');
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+router.get('/admin', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can access this route'
+      });
+    }
+
+    const services = await getDb().collection('services').find({}).toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {

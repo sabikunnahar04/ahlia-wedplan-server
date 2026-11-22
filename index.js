@@ -6,6 +6,7 @@ import { notFound, errorHandler } from './src/middleware/errorHandler.js';
 import servicesRoutes from './src/modules/services/routes.js';
 import bookingsRoutes from './src/modules/bookings/routes.js';
 import usersRoutes from './src/modules/users/routes.js';
+import dashboardRoutes from './src/modules/dashboard/routes.js';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.get('/health', (req, res) => {
 app.use('/api/services', servicesRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
