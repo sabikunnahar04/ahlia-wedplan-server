@@ -131,7 +131,52 @@ router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
 });
 
 
- // Update Booking Status
+ 
+router.put('/:id/cancel', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only customers can cancel bookings',
+      });
+    }
+
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID',
+      });
+    }
+
+    const result = await getDb().collection('bookings').updateOne(
+      {
+        _id: new ObjectId(id),
+        customerId: req.user.sub,
+        status: 'pending',
+      },
+      {
+        $set: { status: 'cancelled' },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending booking not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking cancelled successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.put('/:id/status', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'vendor') {
