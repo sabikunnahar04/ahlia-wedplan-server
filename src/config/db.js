@@ -27,7 +27,7 @@
 //   return dbPromise;
 // }
 
-// export function getDb() {
+// export function connectDB() {
 //   if (!db) {
 //     throw new Error('Database not connected');
 //   }

@@ -1,7 +1,7 @@
 
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
-import { getDb } from '../../config/db.js';
+import connectDB from '../../config/db.js';
 import { verifyToken } from '../../middleware/verifyToken.js';
 
 const router = Router();
@@ -16,7 +16,7 @@ router.get('/', verifyToken, async (req, res, next) => {
       });
     }
 
-    const users = await getDb().collection('user').find({}).toArray();
+    const users = await connectDB().collection('user').find({}).toArray();
 
     res.json({ success: true, data: users });
   } catch (err) {
@@ -45,7 +45,7 @@ router.put('/profile', verifyToken, async (req, res, next) => {
       updateData.businessName = businessName;
     }
 
-    const result = await getDb().collection('user').updateOne(
+    const result = await connectDB().collection('user').updateOne(
       { _id: new ObjectId(req.user.sub) },
       { $set: updateData }
     );
@@ -79,7 +79,7 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
     const { id } = req.params;
     const { isBlocked } = req.body;
 
-    const result = await getDb().collection('user').updateOne(
+    const result = await connectDB().collection('user').updateOne(
       { _id: new ObjectId(id) },
       { $set: { isBlocked } }
     );

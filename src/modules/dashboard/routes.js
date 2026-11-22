@@ -1,6 +1,6 @@
 
 import { Router } from 'express';
-import { getDb } from '../../config/db.js';
+import connectDB from '../../config/db.js';
 import { verifyToken } from '../../middleware/verifyToken.js';
 
 const router = Router();
@@ -14,7 +14,7 @@ router.get('/overview', verifyToken, async (req, res, next) => {
       });
     }
 
-    const db = getDb();
+    const db = connectDB();
 
     const totalUsers = await db.collection('user').countDocuments({});
     const totalVendors = await db.collection('user').countDocuments({ role: 'vendor' });

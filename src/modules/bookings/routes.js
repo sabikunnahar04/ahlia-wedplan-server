@@ -1,7 +1,7 @@
 
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
-import { getDb } from '../../config/db.js';
+import connectDB from '../../config/db.js';
 import { verifyToken } from '../../middleware/verifyToken.js';
 
 const router = Router();
@@ -25,7 +25,7 @@ router.post('/', verifyToken, async (req, res, next) => {
       });
     }
 
-    const db = getDb();
+    const db = connectDB();
 
     const service = await db.collection('services').findOne({
       _id: new ObjectId(serviceId),
@@ -87,7 +87,7 @@ router.post('/', verifyToken, async (req, res, next) => {
 // Get All Bookings
 router.get('/', async (req, res, next) => {
   try {
-    const bookings = await getDb().collection('bookings').find({}).toArray();
+    const bookings = await connectDB().collection('bookings').find({}).toArray();
 
     res.json({ success: true, data: bookings });
   } catch (err) {
@@ -98,7 +98,7 @@ router.get('/', async (req, res, next) => {
 // Customer: My Bookings
 router.get('/my-bookings', verifyToken, async (req, res, next) => {
   try {
-    const db = getDb();
+    const db = connectDB();
 
     const bookings = await db.collection('bookings')
       .find({ customerId: req.user.sub })
@@ -142,7 +142,7 @@ router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
       });
     }
 
-    const bookings = await getDb()
+    const bookings = await connectDB()
       .collection('bookings')
       .find({ vendorId: req.user.sub })
       .toArray();
@@ -175,7 +175,7 @@ router.put('/:id/cancel', verifyToken, async (req, res, next) => {
       });
     }
 
-    const result = await getDb().collection('bookings').updateOne(
+    const result = await connectDB().collection('bookings').updateOne(
       {
         _id: new ObjectId(id),
         customerId: req.user.sub,
@@ -222,7 +222,7 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
       });
     }
 
-    const result = await getDb().collection('bookings').updateOne(
+    const result = await connectDB().collection('bookings').updateOne(
       {
         _id: new ObjectId(id),
         vendorId: req.user.sub,

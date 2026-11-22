@@ -1,7 +1,7 @@
 
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { ObjectId } from 'mongodb';
-import { getDb } from '../config/db.js';
+import connectDB from '../config/db.js';
 
 const JWKS = createRemoteJWKSet(
   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
@@ -31,7 +31,7 @@ export async function verifyToken(req, res, next) {
       });
     }
 
-    const user = await getDb().collection('user').findOne({
+    const user = await connectDB().collection('user').findOne({
       _id: new ObjectId(payload.sub),
     });
 
