@@ -11,7 +11,7 @@ import dashboardRoutes from './src/modules/dashboard/routes.js';
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.use(cors({ origin:true}));
 app.use(express.json());
 
 app.use(async (req, res, next) => {
