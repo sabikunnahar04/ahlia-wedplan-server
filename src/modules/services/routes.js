@@ -47,7 +47,7 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
 // Get All Approved Services
 router.get('/', async (req, res, next) => {
   try {
-    const services = await connectDB().collection('services').find({
+    const services = await db.collection('services').find({
       status: 'approved',
       isActive: { $ne: false },
     }).toArray();
@@ -61,7 +61,7 @@ router.get('/', async (req, res, next) => {
 // Get Vendor's Services
 router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
   try {
-    const services = await connectDB().collection('services').find({
+    const services = await db.collection('services').find({
       vendorId: req.user.sub,
     }).toArray();
 
@@ -77,7 +77,7 @@ router.put('/:id', verifyToken, verifyVendor, async (req, res, next) => {
     const { id } = req.params;
     const { name, category, description, price, location, image } = req.body;
 
-    const result = await connectDB().collection('services').updateOne(
+    const result = await db.collection('services').updateOne(
       {
         _id: new ObjectId(id),
         vendorId: req.user.sub,
@@ -105,7 +105,7 @@ router.delete('/:id', verifyToken, verifyVendor, async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await connectDB().collection('services').deleteOne({
+    const result = await db.collection('services').deleteOne({
       _id: new ObjectId(id),
       vendorId: req.user.sub,
     });
@@ -122,7 +122,7 @@ router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, ne
     const { id } = req.params;
     const { isActive } = req.body;
 
-    const result = await connectDB().collection('services').updateOne(
+    const result = await db.collection('services').updateOne(
       {
         _id: new ObjectId(id),
         vendorId: req.user.sub,
@@ -148,7 +148,7 @@ router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
       });
     }
 
-    const result = await connectDB().collection('services').updateOne(
+    const result = await db.collection('services').updateOne(
       { _id: new ObjectId(req.params.id) },
       { $set: { status: req.body.status } }
     );
@@ -169,7 +169,7 @@ router.delete('/admin/:id', verifyToken, async (req, res, next) => {
       });
     }
 
-    const result = await connectDB().collection('services').deleteOne({
+    const result = await db.collection('services').deleteOne({
       _id: new ObjectId(req.params.id),
     });
 
@@ -189,7 +189,7 @@ router.get('/admin', verifyToken, async (req, res, next) => {
       });
     }
 
-    const services = await connectDB().collection('services').find({}).toArray();
+    const services = await db.collection('services').find({}).toArray();
 
     sendSuccess(res, services, 'Services fetched successfully');
   } catch (err) {

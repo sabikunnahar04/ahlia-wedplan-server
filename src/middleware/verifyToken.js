@@ -31,7 +31,7 @@ export async function verifyToken(req, res, next) {
       });
     }
 
-    const user = await connectDB().collection('user').findOne({
+    const user = await db.collection('user').findOne({
       _id: new ObjectId(payload.sub),
     });
 

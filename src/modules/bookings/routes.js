@@ -87,7 +87,7 @@ router.post('/', verifyToken, async (req, res, next) => {
 // Get All Bookings
 router.get('/', async (req, res, next) => {
   try {
-    const bookings = await connectDB().collection('bookings').find({}).toArray();
+    const bookings = await db.collection('bookings').find({}).toArray();
 
     res.json({ success: true, data: bookings });
   } catch (err) {
@@ -175,7 +175,7 @@ router.put('/:id/cancel', verifyToken, async (req, res, next) => {
       });
     }
 
-    const result = await connectDB().collection('bookings').updateOne(
+    const result = await db.collection('bookings').updateOne(
       {
         _id: new ObjectId(id),
         customerId: req.user.sub,
@@ -222,7 +222,7 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
       });
     }
 
-    const result = await connectDB().collection('bookings').updateOne(
+    const result = await db.collection('bookings').updateOne(
       {
         _id: new ObjectId(id),
         vendorId: req.user.sub,
