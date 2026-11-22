@@ -27,7 +27,7 @@ app.use(async (req, res, next) => {
   }
 });
 
-app.get('/health', (req, res) => {
+app.get("/", (req, res) => {
   res.json({ success: true, message: 'Server is running' });
 });
 
