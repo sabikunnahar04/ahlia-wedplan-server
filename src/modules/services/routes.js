@@ -10,7 +10,7 @@ const router = Router();
 // Add Service
 router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
   try {
-    const db = getDb();
+    const db = await getDb();
 
     const vendor = await db.collection('user').findOne({
       _id: new ObjectId(req.user.sub),
