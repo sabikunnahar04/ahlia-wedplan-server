@@ -42,10 +42,10 @@
 
 import { MongoClient } from "mongodb";
 
-const uri = process.env.DB_URL;
+const uri = process.env.DB_URI;
 
 if (!uri) {
-  throw new Error("Please define DB_URL in environment variables");
+  throw new Error("Please define DB_UR in environment variables");
 }
 
 const options = {};
