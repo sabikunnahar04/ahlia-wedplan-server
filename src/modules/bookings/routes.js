@@ -8,6 +8,7 @@ const router = Router();
 
 // Create booking
 router.post('/', verifyToken, async (req, res, next) => {
+  
   try {
     if (req.user.role !== 'customer') {
       return res.status(403).json({
@@ -86,6 +87,7 @@ router.post('/', verifyToken, async (req, res, next) => {
 
 // Get All Bookings
 router.get('/', async (req, res, next) => {
+   const db = await connectDB()
   try {
     const bookings = await db.collection('bookings').find({}).toArray();
 
@@ -97,6 +99,7 @@ router.get('/', async (req, res, next) => {
 
 // Customer: My Bookings
 router.get('/my-bookings', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     const db = connectDB();
 
@@ -134,6 +137,7 @@ router.get('/my-bookings', verifyToken, async (req, res, next) => {
 
 // Vendor: Booking Requests
 router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -158,6 +162,7 @@ router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
 
 // Customer: Cancel Pending Booking
 router.put('/:id/cancel', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'customer') {
       return res.status(403).json({
@@ -204,6 +209,7 @@ router.put('/:id/cancel', verifyToken, async (req, res, next) => {
 
 // Vendor: Accept or Reject Booking
 router.put('/:id/status', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({

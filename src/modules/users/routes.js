@@ -8,6 +8,7 @@ const router = Router();
 
 // Get all users - Admin
 router.get('/', verifyToken, async (req, res, next) => {
+  const db = await connectDB()
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
@@ -26,6 +27,7 @@ router.get('/', verifyToken, async (req, res, next) => {
 
 // Update own profile - Customer and Vendor
 router.put('/profile', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     const { name, image, businessName } = req.body;
 
@@ -68,6 +70,7 @@ router.put('/profile', verifyToken, async (req, res, next) => {
 
 // Block / Unblock user - Admin
 router.put('/:id/status', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({

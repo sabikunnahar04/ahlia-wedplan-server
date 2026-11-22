@@ -6,6 +6,7 @@ import { verifyToken } from '../../middleware/verifyToken.js';
 const router = Router();
 
 router.get('/overview', verifyToken, async (req, res, next) => {
+  
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
@@ -14,7 +15,7 @@ router.get('/overview', verifyToken, async (req, res, next) => {
       });
     }
 
-    const db = connectDB();
+    const db = await connectDB();
 
     const totalUsers = await db.collection('user').countDocuments({});
     const totalVendors = await db.collection('user').countDocuments({ role: 'vendor' });

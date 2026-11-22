@@ -46,6 +46,7 @@ router.post('/', verifyToken, verifyVendor, async (req, res, next) => {
 
 // Get All Approved Services
 router.get('/', async (req, res, next) => {
+   const db = await connectDB()
   try {
     const services = await db.collection('services').find({
       status: 'approved',
@@ -60,6 +61,7 @@ router.get('/', async (req, res, next) => {
 
 // Get Vendor's Services
 router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => {
+   const db = await connectDB()
   try {
     const services = await db.collection('services').find({
       vendorId: req.user.sub,
@@ -73,6 +75,7 @@ router.get('/my-services', verifyToken, verifyVendor, async (req, res, next) => 
 
 // Update Service
 router.put('/:id', verifyToken, verifyVendor, async (req, res, next) => {
+   const db = await connectDB()
   try {
     const { id } = req.params;
     const { name, category, description, price, location, image } = req.body;
@@ -102,6 +105,7 @@ router.put('/:id', verifyToken, verifyVendor, async (req, res, next) => {
 
 // Vendor: Delete Service
 router.delete('/:id', verifyToken, verifyVendor, async (req, res, next) => {
+   const db = await connectDB()
   try {
     const { id } = req.params;
 
@@ -118,6 +122,7 @@ router.delete('/:id', verifyToken, verifyVendor, async (req, res, next) => {
 
 // Update Service Availability
 router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, next) => {
+   const db = await connectDB()
   try {
     const { id } = req.params;
     const { isActive } = req.body;
@@ -140,6 +145,7 @@ router.patch('/:id/availability', verifyToken, verifyVendor, async (req, res, ne
 
 // Admin: Update Service Status
 router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
@@ -161,6 +167,7 @@ router.put('/admin/:id/status', verifyToken, async (req, res, next) => {
 
 // Admin: Delete Service
 router.delete('/admin/:id', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
@@ -181,6 +188,7 @@ router.delete('/admin/:id', verifyToken, async (req, res, next) => {
 
 // Admin: Get All Services
 router.get('/admin', verifyToken, async (req, res, next) => {
+   const db = await connectDB()
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
