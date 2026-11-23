@@ -6,7 +6,7 @@ import { verifyToken } from '../../middleware/verifyToken.js';
 
 const router = Router();
 
-// Create booking
+// Customer: Create Booking
 router.post('/', verifyToken, async (req, res, next) => {
   try {
     if (req.user.role !== 'customer') {
@@ -18,7 +18,12 @@ router.post('/', verifyToken, async (req, res, next) => {
 
     const { serviceId, eventDate, eventLocation, message } = req.body;
 
-    if (!serviceId || !ObjectId.isValid(serviceId) || !eventDate || !eventLocation) {
+    if (
+      !serviceId ||
+      !ObjectId.isValid(serviceId) ||
+      !eventDate ||
+      !eventLocation
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Please provide all required information',
@@ -45,6 +50,7 @@ router.post('/', verifyToken, async (req, res, next) => {
       });
     }
 
+    // Check existing active booking
     const existingBooking = await db.collection('bookings').findOne({
       customerId: req.user.sub,
       serviceId,
@@ -79,27 +85,21 @@ router.post('/', verifyToken, async (req, res, next) => {
       message: 'Booking created successfully',
       data: result,
     });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Get All Bookings
-router.get('/', async (req, res, next) => {
-  try {
-    const db = await connectDB();
-
-    const bookings = await db.collection('bookings').find({}).toArray();
-
-    res.json({ success: true, data: bookings });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 });
 
 // Customer: My Bookings
 router.get('/my-bookings', verifyToken, async (req, res, next) => {
   try {
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only customers can access their bookings',
+      });
+    }
+
     const db = await connectDB();
 
     const bookings = await db.collection('bookings')
@@ -129,33 +129,8 @@ router.get('/my-bookings', verifyToken, async (req, res, next) => {
       success: true,
       data: updatedBookings,
     });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Vendor: Booking Requests
-router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
-  try {
-    if (req.user.role !== 'vendor') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only vendors can access booking requests',
-      });
-    }
-
-    const db = await connectDB();
-
-    const bookings = await db.collection('bookings')
-      .find({ vendorId: req.user.sub })
-      .toArray();
-
-    res.json({
-      success: true,
-      data: bookings,
-    });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -202,8 +177,33 @@ router.put('/:id/cancel', verifyToken, async (req, res, next) => {
       success: true,
       message: 'Booking cancelled successfully',
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Vendor: Booking Requests
+router.get('/vendor-bookings', verifyToken, async (req, res, next) => {
+  try {
+    if (req.user.role !== 'vendor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only vendors can access booking requests',
+      });
+    }
+
+    const db = await connectDB();
+
+    const bookings = await db.collection('bookings')
+      .find({ vendorId: req.user.sub })
+      .toArray();
+
+    res.json({
+      success: true,
+      data: bookings,
+    });
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -220,7 +220,10 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!ObjectId.isValid(id) || !['accepted', 'rejected'].includes(status)) {
+    if (
+      !ObjectId.isValid(id) ||
+      !['accepted', 'rejected'].includes(status)
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Invalid booking status',
@@ -251,8 +254,8 @@ router.put('/:id/status', verifyToken, async (req, res, next) => {
       success: true,
       message: 'Booking status updated successfully',
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 });
 

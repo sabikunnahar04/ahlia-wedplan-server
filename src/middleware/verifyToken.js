@@ -3,8 +3,14 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { ObjectId } from 'mongodb';
 import connectDB from '../config/db.js';
 
+const CLIENT_URL = process.env.CLIENT_URL;
+
+if (!CLIENT_URL) {
+  throw new Error('CLIENT_URL is missing');
+}
+
 const JWKS = createRemoteJWKSet(
-  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+  new URL('/api/auth/jwks', CLIENT_URL)
 );
 
 export async function verifyToken(req, res, next) {
@@ -14,7 +20,7 @@ export async function verifyToken(req, res, next) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'Unauthorized',
+        message: 'Authorization token missing',
       });
     }
 
@@ -22,33 +28,46 @@ export async function verifyToken(req, res, next) {
 
     const { payload } = await jwtVerify(token, JWKS);
 
-    req.user = payload;
+    const userId = payload.sub;
 
-    if (!payload.sub || !payload.role) {
+    if (!userId || !ObjectId.isValid(userId)) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid user information',
+        message: 'Invalid user ID in token',
       });
     }
 
     const db = await connectDB();
 
     const user = await db.collection('user').findOne({
-      _id: new ObjectId(payload.sub),
+      _id: new ObjectId(userId),
     });
 
-    if (user?.isBlocked) {
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    if (user.isBlocked) {
       return res.status(403).json({
         success: false,
         message: 'Your account has been blocked',
       });
     }
 
-    next();
-  } catch (err) {
-    console.error('Token verification failed:', err);
+    req.user = {
+      sub: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    };
 
-    res.status(401).json({
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error);
+
+    return res.status(401).json({
       success: false,
       message: 'Invalid or expired token',
     });
