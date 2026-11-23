@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import connectDB from '../../config/db.js';
@@ -51,12 +50,21 @@ router.post('/', verifyToken, async (req, res, next) => {
     }
 
     // Check existing active booking
+
+    console.log('BOOKING DEBUG:', {
+      customerId: req.user.sub,
+      serviceId,
+      eventDate,
+    });
+
     const existingBooking = await db.collection('bookings').findOne({
       customerId: req.user.sub,
       serviceId,
       eventDate,
       status: { $in: ['pending', 'accepted'] },
     });
+
+    console.log('EXISTING BOOKING:', existingBooking);
 
     if (existingBooking) {
       return res.status(400).json({
