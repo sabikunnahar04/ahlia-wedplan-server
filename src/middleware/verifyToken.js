@@ -31,6 +31,8 @@ export async function verifyToken(req, res, next) {
       });
     }
 
+    const db = await connectDB();
+
     const user = await db.collection('user').findOne({
       _id: new ObjectId(payload.sub),
     });
@@ -44,6 +46,8 @@ export async function verifyToken(req, res, next) {
 
     next();
   } catch (err) {
+    console.error('Token verification failed:', err);
+
     res.status(401).json({
       success: false,
       message: 'Invalid or expired token',
