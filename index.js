@@ -8,6 +8,7 @@ import servicesRoutes from './src/modules/services/routes.js';
 import bookingsRoutes from './src/modules/bookings/routes.js';
 import usersRoutes from './src/modules/users/routes.js';
 import dashboardRoutes from './src/modules/dashboard/routes.js';
+import subscriptionRoutes from './src/modules/subscription/routes.js';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -33,7 +35,6 @@ const PORT = process.env.PORT || 5000;
 
 connectDB()
   .then(() => {
-
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
